@@ -1,5 +1,6 @@
 package com.bolasaideas.springboot.app;
 
+import com.bolasaideas.springboot.app.auth.filter.JWTAuthenticationFilter;
 import com.bolasaideas.springboot.app.auth.handler.LoginSuccesHandler;
 import com.bolasaideas.springboot.app.models.service.JpaUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .exceptionHandling().accessDeniedPage("/error_403")*/
                 .and()
+                .addFilter(new JWTAuthenticationFilter(authenticationManager()))
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
