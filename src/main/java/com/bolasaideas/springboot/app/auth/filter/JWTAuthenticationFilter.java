@@ -1,5 +1,6 @@
 package com.bolasaideas.springboot.app.auth.filter;
 
+import com.bolasaideas.springboot.app.models.entities.Usuario;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -45,16 +46,21 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
         String username = obtainUsername(request);
         String password = obtainPassword(request);
-        if (username == null) {
-            username = "";
-        }
 
-        if (password == null) {
-            password = "";
-        }
         if (username != null && password != null) {
             logger.info("Username desde request parameter (form-data)" + username);
             logger.info("Password desde request parameter (form-data)" + password);
+        } else {
+            Usuario user = null;
+            try {
+                user = new ObjectMapper().readValue(request.getInputStream(), Usuario.class);
+                username = user.getUsername();
+                password = user.getPassword();
+                logger.info("Username desde request requestInputStream (raw)" + username);
+                logger.info("Password desde request requestInputStream (raw)" + password);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         username = username.trim();
