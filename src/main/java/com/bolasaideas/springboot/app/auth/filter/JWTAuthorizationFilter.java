@@ -1,6 +1,7 @@
 package com.bolasaideas.springboot.app.auth.filter;
 
 import com.bolasaideas.springboot.app.auth.service.JWTService;
+import com.bolasaideas.springboot.app.auth.service.JWTServiceImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,7 +29,7 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
 
-        String header = request.getHeader("Authorization");
+        String header = request.getHeader(JWTServiceImpl.HEADER_STRING);
 
         if (!requiresAuthorization(header)) {
             chain.doFilter(request, response);
@@ -44,7 +45,7 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
     }
 
     protected boolean requiresAuthorization(String header) {
-        if (header == null || !header.startsWith("Bearer ")) {
+        if (header == null || !header.startsWith(JWTServiceImpl.TOKEN_PREFIX)) {
             return false;
         }
         return true;

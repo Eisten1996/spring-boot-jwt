@@ -29,7 +29,10 @@ import java.util.Date;
 @Component
 public class JWTServiceImpl implements JWTService {
 
-    static SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+    public static final SecretKey SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+    public static final long EXPIRATION_DATE = 14000000L;
+    public static final String TOKEN_PREFIX = "Bearer ";
+    public static final String HEADER_STRING = "Authorization";
 
     @Override
     public String create(Authentication authentication) throws IOException {
@@ -45,9 +48,9 @@ public class JWTServiceImpl implements JWTService {
         String token = Jwts.builder()
                 .setClaims(claims)
                 .setSubject(username)
-                .signWith(secretKey)
+                .signWith(SECRET_KEY)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 3600000 * 4))
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_DATE))
                 .compact();
         return token;
     }
@@ -65,7 +68,7 @@ public class JWTServiceImpl implements JWTService {
 
     @Override
     public Claims getClaims(String token) {
-        Claims claims = Jwts.parserBuilder().setSigningKey(secretKey)
+        Claims claims = Jwts.parserBuilder().setSigningKey(SECRET_KEY)
                 .build()
                 .parseClaimsJws(resolve(token)).getBody();
         return claims;
@@ -87,8 +90,8 @@ public class JWTServiceImpl implements JWTService {
 
     @Override
     public String resolve(String token) {
-        if (token != null && token.startsWith("Bearer ")) {
-            return token.replace("Bearer ", "");
+        if (token != null && token.startsWith(TOKEN_PREFIX)) {
+            return token.replace(TOKEN_PREFIX, "");
         } else {
             return null;
         }

@@ -1,6 +1,7 @@
 package com.bolasaideas.springboot.app.auth.filter;
 
 import com.bolasaideas.springboot.app.auth.service.JWTService;
+import com.bolasaideas.springboot.app.auth.service.JWTServiceImpl;
 import com.bolasaideas.springboot.app.models.entities.Usuario;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -73,7 +74,7 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
         String token = jwtService.create(authResult);
 
-        response.addHeader("Authorization", "Bearer " + token);
+        response.addHeader(JWTServiceImpl.HEADER_STRING, JWTServiceImpl.TOKEN_PREFIX + token);
         Map<String, Object> body = new HashMap<String, Object>();
         body.put("token", token);
         body.put("user", ((User) authResult.getPrincipal()));
