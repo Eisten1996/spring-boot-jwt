@@ -1,5 +1,6 @@
 package com.bolasaideas.springboot.app.auth.filter;
 
+import com.bolasaideas.springboot.app.auth.SimpleGrantedAuthorityMixin;
 import com.bolasaideas.springboot.app.models.entities.Usuario;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
@@ -43,11 +44,11 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
             chain.doFilter(request, response);
             return;
         }
-        SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+//        SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
         boolean validoToken;
         Claims token = null;
         try {
-            token = Jwts.parserBuilder().setSigningKey(secretKey)
+            token = Jwts.parserBuilder().setSigningKey(JWTAuthenticationFilter.secretKey)
                     .build()
                     .parseClaimsJws(header.replace("Bearer ", "")).getBody();
             validoToken = true;
@@ -60,7 +61,9 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
         if (validoToken) {
             String username = token.getSubject();
             Object roles = token.get("authorities");
-            Collection<? extends GrantedAuthority> authorities = Arrays.asList(new ObjectMapper().readValue(roles.toString().getBytes(), SimpleGrantedAuthority[].class));
+            Collection<? extends GrantedAuthority> authorities = Arrays.asList(new ObjectMapper()
+                    .addMixIn(SimpleGrantedAuthority.class, SimpleGrantedAuthorityMixin.class)
+                    .readValue(roles.toString().getBytes(), SimpleGrantedAuthority[].class));
             authenticationToken = new UsernamePasswordAuthenticationToken(username, null, authorities);
         }
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
