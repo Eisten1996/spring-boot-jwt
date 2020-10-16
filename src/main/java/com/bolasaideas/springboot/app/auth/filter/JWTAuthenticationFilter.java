@@ -76,7 +76,6 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 
         String username = ((User) authResult.getPrincipal()).getUsername();
         SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
-        logger.info(secretKey.getEncoded());
         Collection<? extends GrantedAuthority> roles = authResult.getAuthorities();
 
         Claims claims = Jwts.claims();
