@@ -1,44 +1,96 @@
 package com.bolasaideas.springboot.app.auth.service;
 
+import com.bolasaideas.springboot.app.auth.SimpleGrantedAuthorityMixin;
+import com.bolasaideas.springboot.app.auth.filter.JWTAuthenticationFilter;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 
 /**
  * @author Dipper
  * @project spring-boot-jwt
  * @created 16/10/2020 - 15:27
  */
+@Component
 public class JWTServiceImpl implements JWTService {
+
+    static SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+
     @Override
-    public String create(Authentication authentication) {
-        return null;
+    public String create(Authentication authentication) throws IOException {
+        String username = ((User) authentication.getPrincipal()).getUsername();
+
+        Collection<? extends GrantedAuthority> roles = authentication.getAuthorities();
+
+        Claims claims = Jwts.claims();
+
+        claims.put("authorities", new ObjectMapper().writeValueAsString(roles));
+
+
+        String token = Jwts.builder()
+                .setClaims(claims)
+                .setSubject(username)
+                .signWith(secretKey)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 3600000 * 4))
+                .compact();
+        return token;
     }
 
     @Override
     public boolean validate(String token) {
-        return false;
+        try {
+            getClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @Override
     public Claims getClaims(String token) {
-        return null;
+        Claims claims = Jwts.parserBuilder().setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(resolve(token)).getBody();
+        return claims;
     }
 
     @Override
     public String getUsername(String token) {
-        return null;
+        return getClaims(token).getSubject();
     }
 
     @Override
-    public Collection<? extends GrantedAuthority> getRoles(String token) {
-        return null;
+    public Collection<? extends GrantedAuthority> getRoles(String token) throws IOException {
+        Object roles = getClaims(token).get("authorities");
+        Collection<? extends GrantedAuthority> authorities = Arrays.asList(new ObjectMapper()
+                .addMixIn(SimpleGrantedAuthority.class, SimpleGrantedAuthorityMixin.class)
+                .readValue(roles.toString().getBytes(), SimpleGrantedAuthority[].class));
+        return authorities;
     }
 
     @Override
     public String resolve(String token) {
-        return null;
+        if (token != null && token.startsWith("Bearer ")) {
+            return token.replace("Bearer ", "");
+        } else {
+            return null;
+        }
     }
 }

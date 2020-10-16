@@ -1,14 +1,8 @@
 package com.bolasaideas.springboot.app.auth.filter;
 
-import com.bolasaideas.springboot.app.auth.SimpleGrantedAuthorityMixin;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
+import com.bolasaideas.springboot.app.auth.service.JWTService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
@@ -17,8 +11,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * @author Dipper
@@ -26,8 +18,11 @@ import java.util.Collection;
  * @created 16/10/2020 - 10:15
  */
 public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
-    public JWTAuthorizationFilter(AuthenticationManager authenticationManager) {
+    private JWTService jwtService;
+
+    public JWTAuthorizationFilter(AuthenticationManager authenticationManager, JWTService jwtService) {
         super(authenticationManager);
+        this.jwtService = jwtService;
     }
 
     @Override
@@ -39,27 +34,10 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
             chain.doFilter(request, response);
             return;
         }
-//        SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
-        boolean validoToken;
-        Claims token = null;
-        try {
-            token = Jwts.parserBuilder().setSigningKey(JWTAuthenticationFilter.secretKey)
-                    .build()
-                    .parseClaimsJws(header.replace("Bearer ", "")).getBody();
-            validoToken = true;
-        } catch (JwtException | IllegalArgumentException e) {
-            e.printStackTrace();
-            validoToken = false;
-        }
 
         UsernamePasswordAuthenticationToken authenticationToken = null;
-        if (validoToken) {
-            String username = token.getSubject();
-            Object roles = token.get("authorities");
-            Collection<? extends GrantedAuthority> authorities = Arrays.asList(new ObjectMapper()
-                    .addMixIn(SimpleGrantedAuthority.class, SimpleGrantedAuthorityMixin.class)
-                    .readValue(roles.toString().getBytes(), SimpleGrantedAuthority[].class));
-            authenticationToken = new UsernamePasswordAuthenticationToken(username, null, authorities);
+        if (jwtService.validate(header)) {
+            authenticationToken = new UsernamePasswordAuthenticationToken(jwtService.getUsername(header), null, jwtService.getRoles(header));
         }
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         chain.doFilter(request, response);
